@@ -1,4 +1,4 @@
-cities = ['', 'Aberdeen', 'Abilene', 'Akron', 'Albany', 'Albuquerque', 'Alexandria',
+cities = ['Aberdeen', 'Abilene', 'Akron', 'Albany', 'Albuquerque', 'Alexandria',
           'Allentown', 'Amarillo', 'Anaheim', 'Anchorage', 'Ann Arbor', 'Antioch',
           'Apple Valley', 'Appleton', 'Arlington', 'Arvada', 'Asheville', 'Athens',
           'Atlanta', 'Atlantic City', 'Augusta', 'Aurora', 'Austin', 'Bakersfield',
