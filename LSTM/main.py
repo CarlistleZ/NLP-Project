@@ -76,7 +76,7 @@ def launch_clf(input_matrix, tag_matrix):
     # # or use loss categorical_crossentropy
     # model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=16, epochs=40)
     # model.save('./results/model.h5')
-    model = load_model('./results/20/model_20_0.061.h5')
+    model = load_model('./results/40/model_0.018.h5')
 
     res = model.predict(X_test).argmax(-1)
     ev = model.evaluate(res, y_test, batch_size=64)
@@ -95,8 +95,9 @@ def generate_res(produced, ref, inv_tags_dict, word_dict, X_test):
             ref_tag = inv_tags_dict[ref[i, j, 0]]
             wd = word_dict[X_test[i, j]]
             # if produced_tag != 'O' and ref_tag != 'O':
+            # if produced_tag != ref_tag:
             f.write(wd + ' ' + ref_tag + ' ' + produced_tag + '\n')
-        f.write('\n')
+        # f.write('\n')
     # f.write("Now the file has more content!")
     f.close()
 
