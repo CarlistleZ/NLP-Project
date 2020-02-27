@@ -1,14 +1,14 @@
 import numpy as np
 from keras import Input, Model
 from keras.engine.saving import load_model
-from keras.layers import Embedding, LSTM, Dropout, TimeDistributed, Dense
+from keras.layers import Embedding, LSTM, Dropout, TimeDistributed, Dense, CuDNNLSTM
 from sklearn.model_selection import train_test_split
+import vocabulary
 
-
-# import tensorflow as tf
-# configT = tf.ConfigProto()
-# configT.gpu_options.allow_growth = True
-# session = tf.Session()
+import tensorflow as tf
+configT = tf.ConfigProto()
+configT.gpu_options.allow_growth = True
+session = tf.Session(config=configT)
 
 
 def init_mat(file):
@@ -20,6 +20,7 @@ def init_mat(file):
     for line in f:
         if line != '\t\n':
             word = line.split('\t')[0]
+            word = vocabulary.lookup(word)
             if word not in dict_words:
                 dict_words[word] = len(dict_words)
             sentence.append(dict_words[word])
@@ -59,6 +60,30 @@ def init_mat(file):
     return mat_words, mat_tags, inv_word_dict, inv_tags_dict
 
 
+def launch_cuda_clf(input_matrix, tag_matrix):
+    X_train, X_test, y_train, y_test = train_test_split(input_matrix, tag_matrix, test_size=0.33)
+
+    max_seq_size = 86
+    nb_labels = 5000
+    entree = Input(shape=(max_seq_size,), dtype='int32')
+    emb = Embedding(len(tag_matrix), 100)(entree)
+    bi = CuDNNLSTM(100, return_sequences=True)(emb)
+    drop = Dropout(0.5)(bi)
+    out = TimeDistributed(Dense(units=nb_labels, activation='softmax'))(drop)
+
+    model = Model(inputs=entree, outputs=out)
+    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam")
+    # or use loss categorical_crossentropy
+    model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=16, epochs=40)
+    model.save('/home-reseau/xizheng/Desktop/folder/results/model_cu_40.h5')
+    model = load_model('/home-reseau/xizheng/Desktop/folder/results/model_cu_40.h5')
+
+    res = model.predict(X_test).argmax(-1)
+    ev = model.evaluate(res, y_test, batch_size=64)
+
+    return ev, res, y_test, X_test
+
+
 def launch_clf(input_matrix, tag_matrix):
     X_train, X_test, y_train, y_test = train_test_split(input_matrix, tag_matrix, test_size=0.33)
 
@@ -68,15 +93,16 @@ def launch_clf(input_matrix, tag_matrix):
     emb = Embedding(len(tag_matrix), 100)(entree)
     bi = LSTM(100, return_sequences=True)(emb)
     # bi = Bidirectional(LSTM(config.hidden, return_sequences=True))(emb)
+    # bi = CuDNNLSTM(100, return_sequences=True)(emb)
     drop = Dropout(0.5)(bi)
     out = TimeDistributed(Dense(units=nb_labels, activation='softmax'))(drop)
 
-    # model = Model(inputs=entree, outputs=out)
-    # model.compile(loss="sparse_categorical_crossentropy", optimizer="adam")
-    # # or use loss categorical_crossentropy
-    # model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=16, epochs=40)
-    # model.save('./results/model.h5')
-    model = load_model('./results/40/model_0.018.h5')
+    model = Model(inputs=entree, outputs=out)
+    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam")
+    # or use loss categorical_crossentropy
+    model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=16, epochs=10)
+    model.save('/home-reseau/xizheng/Desktop/folder/results/model_cu_10.h5')
+    model = load_model('/home-reseau/xizheng/Desktop/folder/results/model_cu_10.h5')
 
     res = model.predict(X_test).argmax(-1)
     ev = model.evaluate(res, y_test, batch_size=64)
@@ -85,30 +111,41 @@ def launch_clf(input_matrix, tag_matrix):
 
 
 def generate_res(produced, ref, inv_tags_dict, word_dict, X_test):
-    f = open("./results/res.txt", "a")
+    f = open("/home-reseau/xizheng/Desktop/folder/results/res.txt", "a")
+    fm = open("/home-reseau/xizheng/Desktop/folder/results/misclf.txt", "a")
     for i in range(produced.shape[0]):
         for j in range(produced.shape[1]):
-            if produced[i, j] != 2622:
+            if produced[i, j] < len(inv_tags_dict):
                 produced_tag = inv_tags_dict[produced[i, j]]
             else:
                 produced_tag = inv_tags_dict[0]
             ref_tag = inv_tags_dict[ref[i, j, 0]]
             wd = word_dict[X_test[i, j]]
-            # if produced_tag != 'O' and ref_tag != 'O':
-            # if produced_tag != ref_tag:
-            f.write(wd + ' ' + ref_tag + ' ' + produced_tag + '\n')
+            # if produced_tag != 'O' and ref_tag != 'O' :
+            if produced_tag != ref_tag:
+                fm.write(wd + ' ' + ref_tag + ' ' + produced_tag + '\n')
+            if wd != '' :
+                f.write(wd + ' ' + ref_tag + ' ' + produced_tag + '\n')
         # f.write('\n')
-    # f.write("Now the file has more content!")
     f.close()
+    fm.close()
 
+
+def reconstruct_words(word_mat, word_dict):
+
+    for x in range(word_mat.shape[0]):
+        for y in range(word_mat.shape[1]):
+            if word_mat[x, y] != 0:
+                print(word_mat[x, y], '->', word_dict[word_mat[x, y]])
+        print()
 
 if __name__ == '__main__':
-    word_mat, tags_mat, word_dict, tags_dict = init_mat('../atis.train')
+    word_mat, tags_mat, word_dict, tags_dict = init_mat('/home-reseau/xizheng/Desktop/folder/atis.train')
     # print(tags_dict)
     # print(word_dict)
     # reconstruct_words(word_mat, word_dict)
     # reconstruct_tags(tags_mat, tags_dict)
-    ev, produced, ref, X_test = launch_clf(word_mat, tags_mat)
+    ev, produced, ref, X_test = launch_cuda_clf(word_mat, tags_mat)
     print('Accuracy: ', ev)
     generate_res(produced, ref, tags_dict, word_dict, X_test)
 

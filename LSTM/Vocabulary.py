@@ -394,13 +394,14 @@ airport_codes = ['abr', 'abi', 'adk', 'kki', 'aki', 'cak', 'kqa', 'auk', 'alm', 
                  'wrg', 'ykm', 'yak', 'cod', 'yng', 'yum']
 
 
-state_name = ['alabama ', 'alaska ', 'arizona ', 'arkansas ', 'california ', 'colorado ', 'connecticut ', 'delaware ',
-              'florida ', 'georgia ', 'hawaii ', 'idaho ', 'illinois indiana ', 'iowa ', 'kansas ', 'kentucky ',
-              'louisiana ', 'maine ', 'maryland ', 'massachusetts ', 'michigan ', 'minnesota ', 'mississippi ',
-              'missouri ', 'montana nebraska ', 'nevada ', 'new hampshire ', 'new jersey ', 'new mexico ',
-              'new york ', 'north carolina ', 'north dakota ', 'ohio ', 'oklahoma ', 'oregon ', 'pennsylvania',
-              'rhode island ', 'south carolina ', 'south dakota ', 'tennessee ', 'texas ', 'utah ', 'vermont ',
-              'virginia ', 'washington ', 'west virginia ', 'wisconsin ', 'wyoming']
+state_name =['alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut', 'delaware',
+             'florida', 'georgia', 'hawaii', 'idaho', 'illinois indiana', 'iowa', 'kansas', 'kentucky',
+             'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan', 'minnesota', 'mississippi',
+             'missouri', 'montana nebraska', 'nevada', 'new hampshire', 'new jersey', 'new mexico', 'new york',
+             'north carolina', 'north dakota', 'ohio', 'oklahoma', 'oregon', 'pennsylvania', 'rhode island',
+             'south carolina', 'south dakota', 'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington',
+             'west virginia', 'wisconsin', 'wyoming']
+
 
 
 state_code = ['al', 'ak', 'az', 'ar', 'ca', 'co', 'ct', 'de', 'fl', 'ga', 'hi', 'id', 'il', 'in', 'ia', 'ks', 'ky',
@@ -413,5 +414,18 @@ meal_desc = ['breakfast', 'lunch', 'dinner']
 
 flight_mod = ['weekdays', 'only-weekdays', 'weekday']
 
+vocab_dict = {"city" : cities, "airport": airports, "airline": airlines ,"airportcode" : airport_codes,
+              "statename" : state_name, "statecode" : state_code, "mealdesc": meal_desc, "flightmode" : flight_mod}
+
+def lookup(word) :
+    for vocab_name in vocab_dict :
+        if word in vocab_dict[vocab_name] :
+            return vocab_name
+    return word
+
 if __name__ == '__main__':
-    pass
+    print(lookup('utah'))
+    tmp = []
+    for s in state_name:
+        tmp.append(s.strip())
+    print(tmp)
