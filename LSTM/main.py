@@ -4,12 +4,13 @@ from keras.engine.saving import load_model
 from keras.layers import Embedding, LSTM, Dropout, TimeDistributed, Dense, CuDNNLSTM
 from sklearn.model_selection import train_test_split
 import vocabulary
-
 import tensorflow as tf
-configT = tf.ConfigProto()
-configT.gpu_options.allow_growth = True
-session = tf.Session(config=configT)
 
+# configT = tf.ConfigProto()
+# configT.gpu_options.allow_growth = True
+# session = tf.Session(config=configT)
+
+BASE_DIR = '/Users/Carlistle/Documents/S8/NLP/NLPProject/LSTM/'
 
 def init_mat(file):
     # Generate word matrix
@@ -35,7 +36,10 @@ def init_mat(file):
     line_tags = []
     dict_tags = {}
     f = open(file, "r")
+    i = 0
     for line in f:
+        print('Line ', i, line)
+        i += 1
         if line != '\t\n':
             tag = line.split('\t')[1].rstrip()
             if tag not in dict_tags:
@@ -75,8 +79,8 @@ def launch_cuda_clf(input_matrix, tag_matrix):
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam")
     # or use loss categorical_crossentropy
     model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=16, epochs=40)
-    model.save('/home-reseau/xizheng/Desktop/folder/results/model_cu_40.h5')
-    model = load_model('/home-reseau/xizheng/Desktop/folder/results/model_cu_40.h5')
+    model.save(BASE_DIR + 'results/model_cu_40.h5')
+    model = load_model(BASE_DIR + 'results/model_cu_40.h5')
 
     res = model.predict(X_test).argmax(-1)
     ev = model.evaluate(res, y_test, batch_size=64)
@@ -101,8 +105,8 @@ def launch_clf(input_matrix, tag_matrix):
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam")
     # or use loss categorical_crossentropy
     model.fit(X_train, y_train, validation_data=(X_test, y_test), batch_size=16, epochs=10)
-    model.save('/home-reseau/xizheng/Desktop/folder/results/model_cu_10.h5')
-    model = load_model('/home-reseau/xizheng/Desktop/folder/results/model_cu_10.h5')
+    model.save(BASE_DIR + 'results/model_cu_10.h5')
+    model = load_model(BASE_DIR + 'results/model_cu_10.h5')
 
     res = model.predict(X_test).argmax(-1)
     ev = model.evaluate(res, y_test, batch_size=64)
@@ -111,8 +115,8 @@ def launch_clf(input_matrix, tag_matrix):
 
 
 def generate_res(produced, ref, inv_tags_dict, word_dict, X_test):
-    f = open("/home-reseau/xizheng/Desktop/folder/results/res.txt", "a")
-    fm = open("/home-reseau/xizheng/Desktop/folder/results/misclf.txt", "a")
+    f = open(BASE_DIR + "results/res.txt", "a")
+    fm = open(BASE_DIR + "results/misclf.txt", "a")
     for i in range(produced.shape[0]):
         for j in range(produced.shape[1]):
             if produced[i, j] < len(inv_tags_dict):
@@ -124,7 +128,7 @@ def generate_res(produced, ref, inv_tags_dict, word_dict, X_test):
             # if produced_tag != 'O' and ref_tag != 'O' :
             if produced_tag != ref_tag:
                 fm.write(wd + ' ' + ref_tag + ' ' + produced_tag + '\n')
-            if wd != '' :
+            if wd != '':
                 f.write(wd + ' ' + ref_tag + ' ' + produced_tag + '\n')
         # f.write('\n')
     f.close()
@@ -132,15 +136,15 @@ def generate_res(produced, ref, inv_tags_dict, word_dict, X_test):
 
 
 def reconstruct_words(word_mat, word_dict):
-
     for x in range(word_mat.shape[0]):
         for y in range(word_mat.shape[1]):
             if word_mat[x, y] != 0:
                 print(word_mat[x, y], '->', word_dict[word_mat[x, y]])
         print()
 
+
 if __name__ == '__main__':
-    word_mat, tags_mat, word_dict, tags_dict = init_mat('/home-reseau/xizheng/Desktop/folder/atis.train')
+    word_mat, tags_mat, word_dict, tags_dict = init_mat(BASE_DIR + '../atis.train')
     # print(tags_dict)
     # print(word_dict)
     # reconstruct_words(word_mat, word_dict)
@@ -148,7 +152,6 @@ if __name__ == '__main__':
     ev, produced, ref, X_test = launch_cuda_clf(word_mat, tags_mat)
     print('Accuracy: ', ev)
     generate_res(produced, ref, tags_dict, word_dict, X_test)
-
 
 '''
 def reconstruct_words(word_mat, word_dict):
