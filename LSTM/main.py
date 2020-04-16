@@ -12,6 +12,7 @@ import tensorflow as tf
 
 BASE_DIR = '/Users/Carlistle/Documents/S8/NLP/NLPProject/LSTM/'
 
+
 def init_mat(file):
     # Generate word matrix
     dict_words = {'': 0, 'oov': 1}
@@ -153,7 +154,7 @@ if __name__ == '__main__':
     print('Accuracy: ', ev)
     generate_res(produced, ref, tags_dict, word_dict, X_test)
 
-'''
+
 def reconstruct_words(word_mat, word_dict):
     inv_word_dict = {}
     for elt in word_dict:
@@ -183,4 +184,4 @@ def print_mat(m):
         for y in range(m.shape[1]):
             s += '\'' + m[x, y] + '\','
         print(s)
-'''
+
